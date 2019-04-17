@@ -19,23 +19,23 @@ import * as tf from '@tensorflow/tfjs';
 
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
-const MOBILENET_MODEL_PATH =
+const DEEPHUMOUR_MODEL_PATH =
     // tslint:disable-next-line:max-line-length
-    'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
+    './model.json';
 
 const IMAGE_SIZE = 224;
 const TOPK_PREDICTIONS = 10;
 
-let mobilenet;
-const mobilenetDemo = async () => {
+let deephumournet;
+const deephumournetDemo = async () => {
   status('Loading model...');
 
-  mobilenet = await tf.loadLayersModel(MOBILENET_MODEL_PATH);
+  deephumournet = await tf.loadLayersModel(DEEPHUMOUR_MODEL_PATH);
 
   // Warmup the model. This isn't necessary, but makes the first prediction
   // faster. Call `dispose` to release the WebGL memory allocated for the return
   // value of `predict`.
-  mobilenet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
+  deephumournet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
 
   status('');
 
@@ -79,7 +79,7 @@ async function predict(imgElement) {
 
     startTime2 = performance.now();
     // Make a prediction through deephumour.
-    return mobilenet.predict(batched);
+    return deephumournet.predict(batched);
   });
 
   // Convert logits to probabilities and class names.
@@ -96,7 +96,7 @@ async function predict(imgElement) {
 /**
  * Computes the probabilities of the topK classes given logits by computing
  * softmax to get probabilities and then sorting the probabilities.
- * @param logits Tensor representing the logits from MobileNet.
+ * @param logits Tensor representing the logits from deephumournet.
  * @param topK The number of top predictions to show.
  */
 export async function getTopKClasses(logits, topK) {
@@ -192,4 +192,4 @@ const status = msg => demoStatusElement.innerText = msg;
 
 const predictionsElement = document.getElementById('generatedMeme');
 
-mobilenetDemo();
+deephumournetDemo();
