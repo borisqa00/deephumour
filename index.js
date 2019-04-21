@@ -1,4 +1,4 @@
-/**
+	/**
  * @license
  * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,9 @@ const DEEPHUMOUR_MODEL_PATH =
 
 const IMAGE_SIZE = 224;
 const TOPK_PREDICTIONS = 10;
+
+
+
 
 let deephumournet;
 const deephumournetDemo = async () => {
@@ -53,11 +56,59 @@ const deephumournetDemo = async () => {
   document.getElementById('file-container').style.display = '';
 };
 
+
+async function predict(imgElement){
+	status('Predicting...');
+	
+	// The first start time includes the time it takes to extract the image
+	// from the HTML and preprocess it, in additon to the predict() call.
+	const startTime1 = performance.now();
+	// The second start time excludes the extraction and preprocessing and
+	// includes only the predict() call.
+	let startTime2;
+	
+	
+	const logits = tf.tidy(() => {
+	// tf.browser.fromPixels() returns a Tensor from an image element.
+	const img = tf.browser.fromPixels(imgElement).toFloat();
+
+	const offset = tf.scalar(127.5);
+	// Normalize the image from [0, 255] to [-1, 1].
+	const normalized = img.sub(offset).div(offset);
+
+	// Reshape to a single-element batch so we can pass it to predict.
+	const batched = normalized.reshape([1, IMAGE_SIZE, IMAGE_SIZE, 3]);
+
+	startTime2 = performance.now();
+	// Make a prediction through deephumour.
+	return deephumournet.predict(batched);
+	});
+
+	
+	const totalTime1 = performance.now() - startTime1;
+	const totalTime2 = performance.now() - startTime2;
+	status(`Done in ${Math.floor(totalTime1)} ms ` +
+	  `(not including preprocessing: ${Math.floor(totalTime2)} ms)`);
+
+	  
+	// Convert logits to probabilities and class names.
+	var words = await getTopKClasses(logits, TOPK_PREDICTIONS);
+	words = get_random_word(words);
+	words.then(function(value){
+		// Show the classes in the DOM.
+		showResults(imgElement, value);
+	});
+	
+	
+
+	
+};
+
 /**
  * Given an image element, makes a prediction through deephumour returning the
  * probabilities of the top K classes.
  */
-async function predict(imgElement) {
+async function predict_1(imgElement) {
   status('Predicting...');
 
   // The first start time includes the time it takes to extract the image
@@ -89,8 +140,19 @@ async function predict(imgElement) {
   status(`Done in ${Math.floor(totalTime1)} ms ` +
       `(not including preprocessing: ${Math.floor(totalTime2)} ms)`);
 
+  console.log(classes)
   // Show the classes in the DOM.
   showResults(imgElement, classes);
+};
+
+
+
+
+export async function get_random_word(words){
+	console.log(words);
+	words = words.slice(0, 3);
+	var rand = words[Math.floor(Math.random() * words.length)];
+	return [rand];
 }
 
 /**
@@ -124,7 +186,7 @@ export async function getTopKClasses(logits, topK) {
     })
   }
   return topClassesAndProbs;
-}
+};
 
 //
 // UI
@@ -133,7 +195,7 @@ export async function getTopKClasses(logits, topK) {
 function showResults(imgElement, classes) {
   const predictionContainer = document.createElement('div');
   predictionContainer.className = 'pred-container';
-
+	
   const imgContainer = document.createElement('div');
   imgContainer.appendChild(imgElement);
   predictionContainer.appendChild(imgContainer);
